@@ -142,7 +142,7 @@ def get_model_answers(
                 raise ValueError(
                     "max_tokens must be specified if model.config doesn't have an attribute n_positions, max_position_embeddings, or n_ctx"
                 )
-        # FIXME: モデルごとに指定する
+        # FIXME: モデルごとに指定する必要があるのか
         if model_id == "matsuo-lab/weblab-10b-instruction-sft":
             tokenizer.pad_token_id = 1
             tokenizer.eos_token_id = 0
