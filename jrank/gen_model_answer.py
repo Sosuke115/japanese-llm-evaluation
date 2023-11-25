@@ -36,7 +36,7 @@ from adapters import (
     FastTokenizerAvailableBaseAdapter,
     JapaneseStableLMAlphaAdapter,
     JapaneseStableLMAlphaAdapterv2,
-    RwkvWorldAdapter,
+    # RwkvWorldAdapter,
 )
 
 from fire import Fire
@@ -49,9 +49,9 @@ model_adapters[-1] = FastTokenizerAvailableBaseAdapter()
 model_adapters.insert(0, JapaneseStableLMAlphaAdapter())
 model_adapters.insert(1, JapaneseStableLMAlphaAdapterv2())
 
-for i in range(len(model_adapters)):
-    if "Rwkv" in type(model_adapters[i]).__name__:
-        model_adapters[i] = RwkvWorldAdapter()
+# for i in range(len(model_adapters)):
+#     if "Rwkv" in type(model_adapters[i]).__name__:
+#         model_adapters[i] = RwkvWorldAdapter()
 
 
 # Helper that generate a fastchat conversation from a template file
@@ -148,10 +148,10 @@ def get_model_answers(
             tokenizer.eos_token_id = 0
             tokenizer.bos_token_id = tokenizer.pad_token_id
 
-        if "RWKV" not in model_path:
-            print(
-                f"pad_token_id={tokenizer.pad_token_id}, bos_token_id={tokenizer.bos_token_id}, eos_token_id={tokenizer.eos_token_id}"
-            )
+        # if "RWKV" not in model_path:
+        #     print(
+        #         f"pad_token_id={tokenizer.pad_token_id}, bos_token_id={tokenizer.bos_token_id}, eos_token_id={tokenizer.eos_token_id}"
+        #     )
 
     for question in tqdm(questions):
         if not temperature:
@@ -167,7 +167,8 @@ def get_model_answers(
 
         stopping_criteria = None
 
-        if generate_answers and conv.stop_str and "RWKV" not in model_path:
+        # if generate_answers and conv.stop_str and "RWKV" not in model_path:
+        if generate_answers and conv.stop_str:
 
             class StoppingCriteriaSub(StoppingCriteria):
                 def __init__(self, stops=[], encounters=1):
@@ -271,19 +272,13 @@ def get_model_answers(
                         print(f"output_ids: { {id:tokenizer.convert_ids_to_tokens([id]) for id in output_ids.detach().cpu().numpy()} }", file=sys.stderr)
                         print(f"len(output_ids): {len(output_ids)}", file=sys.stderr)
 
-                        if "RWKV" in model_path:
-                            output = tokenizer.decode(output_ids).strip()
-                        elif "stablelm-instruct-alpha" in model_path:
-                            print('special stablelm-alpha decode')
-                            output = tokenizer.decode(
-                                output_ids,
-                                skip_special_tokens=True,
-                            )
-                        else:
-                            output = tokenizer.decode(
-                                output_ids,
-                                spaces_between_special_tokens=False,
-                            )
+                        # if "RWKV" in model_path:
+                        #     output = tokenizer.decode(output_ids).strip()
+                        # else:
+                        output = tokenizer.decode(
+                            output_ids,
+                            skip_special_tokens=True,
+                        )
 
                         for special_token in tokenizer.special_tokens_map.values():
                             if isinstance(special_token, list):
