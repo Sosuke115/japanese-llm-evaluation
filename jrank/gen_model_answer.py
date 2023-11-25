@@ -111,6 +111,8 @@ def get_model_answers(
 
     # Load the model
     if generate_answers:
+        # FIXME: modelとtokenizerを分けてロードできるように
+        # https://github.com/Stability-AI/FastChat/blob/0a2ea3b365731f91223ccc5639570b6ffa4372dd/fastchat/model/model_adapter.py#L148
         model, tokenizer = load_model(
             model_path=model_path,
             device=device,
@@ -123,10 +125,6 @@ def get_model_answers(
         )
         model.config.use_cache = False
 
-        # if lora_path is not None:
-        #     model = PeftModel.from_pretrained(
-        #         model, lora_path, torch_dtype=torch.float16
-        #     )
         if lora_path is not None:
             model = PeftModel.from_pretrained(
                 model, lora_path, device_map="auto"
