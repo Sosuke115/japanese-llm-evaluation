@@ -45,11 +45,12 @@ from tqdm import tqdm
 from transformers import GenerationConfig, StoppingCriteriaList, StoppingCriteria
 
 # Hack the fastchat model adapters
-register_model_adapter(FastTokenizerAvailableBaseAdapter)
-register_model_adapter(JapaneseStableLMAlphaAdapter)
-register_model_adapter(JapaneseStableLMAlphaAdapterv2)
-register_model_adapter(ElyzaJapaneseLlama2Adapter)
-register_model_adapter(JapaneseStableLMGammaAdapter)
+# register_model_adapter(FastTokenizerAvailableBaseAdapter)
+# register_model_adapter(JapaneseStableLMAlphaAdapter)
+# register_model_adapter(JapaneseStableLMAlphaAdapterv2)
+# PeftModelAdapterの次に高い優先度に設定
+model_adapters.insert(1, ElyzaJapaneseLlama2Adapter())
+model_adapters.insert(1, JapaneseStableLMGammaAdapter())
 
 
 # Helper that generate a fastchat conversation from a template file

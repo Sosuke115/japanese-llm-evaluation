@@ -69,6 +69,7 @@ class ElyzaJapaneseLlama2Adapter(BaseModelAdapter):
         return "elyza" in model_path.lower()
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         print("Loading using ElyzaJapaneseLlama2Adapter", file=sys.stderr)
+        print("model kwargs:", from_pretrained_kwargs, file=sys.stderr)
         model, tokenizer = super().load_model(model_path, from_pretrained_kwargs)
         model.config.pad_token_id = tokenizer.pad_token_id
         model.config.eos_token_id = tokenizer.eos_token_id
@@ -80,5 +81,6 @@ class JapaneseStableLMGammaAdapter(BaseModelAdapter):
         return "japanese-stablelm-base-gamma-7b" in model_path.lower()
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         print("Loading using JapaneseStableLMGammaAdapter", file=sys.stderr)
+        print("model kwargs:", from_pretrained_kwargs, file=sys.stderr)
         model, tokenizer = super().load_model(model_path, from_pretrained_kwargs)
         return model, tokenizer
