@@ -40,7 +40,6 @@ from adapters import (
 )
 
 from fire import Fire
-from peft import PeftModel
 from tqdm import tqdm
 from transformers import GenerationConfig, StoppingCriteriaList, StoppingCriteria
 
@@ -48,10 +47,6 @@ from transformers import GenerationConfig, StoppingCriteriaList, StoppingCriteri
 model_adapters[-1] = FastTokenizerAvailableBaseAdapter()
 model_adapters.insert(0, JapaneseStableLMAlphaAdapter())
 model_adapters.insert(1, JapaneseStableLMAlphaAdapterv2())
-
-# for i in range(len(model_adapters)):
-#     if "Rwkv" in type(model_adapters[i]).__name__:
-#         model_adapters[i] = RwkvWorldAdapter()
 
 
 # Helper that generate a fastchat conversation from a template file
@@ -81,7 +76,6 @@ def get_model_answers(
     question_begin: Optional[int] = None,
     question_end: Optional[int] = None,
     # model parameters
-    lora_path: Optional[str] = None,
     conv_template: Optional[str] = None,
     device: str = "cuda",
     num_gpus: int = 1,
@@ -111,8 +105,6 @@ def get_model_answers(
 
     # Load the model
     if generate_answers:
-        # FIXME: modelとtokenizerを分けてロードできるように
-        # https://github.com/Stability-AI/FastChat/blob/0a2ea3b365731f91223ccc5639570b6ffa4372dd/fastchat/model/model_adapter.py#L148
         model, tokenizer = load_model(
             model_path=model_path,
             device=device,
@@ -124,11 +116,6 @@ def get_model_answers(
             dtype="auto",
         )
         model.config.use_cache = False
-
-        if lora_path is not None:
-            model = PeftModel.from_pretrained(
-                model, lora_path, device_map="auto"
-            )
         model.eval()
 
         if max_tokens is None:
@@ -142,16 +129,11 @@ def get_model_answers(
                 raise ValueError(
                     "max_tokens must be specified if model.config doesn't have an attribute n_positions, max_position_embeddings, or n_ctx"
                 )
-        # FIXME: モデルごとに指定する必要があるのか
+        # FIXME: ここの処理を見直す
         if model_id == "matsuo-lab/weblab-10b-instruction-sft":
             tokenizer.pad_token_id = 1
             tokenizer.eos_token_id = 0
             tokenizer.bos_token_id = tokenizer.pad_token_id
-
-        # if "RWKV" not in model_path:
-        #     print(
-        #         f"pad_token_id={tokenizer.pad_token_id}, bos_token_id={tokenizer.bos_token_id}, eos_token_id={tokenizer.eos_token_id}"
-        #     )
 
     for question in tqdm(questions):
         if not temperature:
