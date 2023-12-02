@@ -167,7 +167,7 @@ def run_judge_single(question, answer, judge, ref_answer, multi_turn=False):
     else:
         raise ValueError(f"Invalid judge model name: {model}")
 
-    if judge.prompt_template["output_format"] == "[[rating]]":
+    if judge.prompt_template["output_format"] in ["[[rating]]", "[[評価]]"]:
         match = re.search(one_score_pattern, judgment)
         if not match:
             match = re.search(one_score_pattern_backup, judgment)

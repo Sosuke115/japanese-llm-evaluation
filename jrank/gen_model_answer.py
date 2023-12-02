@@ -36,11 +36,10 @@ from adapters import (
     FastTokenizerAvailableBaseAdapter,
     JapaneseStableLMAlphaAdapter,
     JapaneseStableLMAlphaAdapterv2,
-    RwkvWorldAdapter,
+    # RwkvWorldAdapter,
 )
 
 from fire import Fire
-from peft import PeftModel
 from tqdm import tqdm
 from transformers import GenerationConfig, StoppingCriteriaList, StoppingCriteria
 
@@ -48,10 +47,6 @@ from transformers import GenerationConfig, StoppingCriteriaList, StoppingCriteri
 model_adapters[-1] = FastTokenizerAvailableBaseAdapter()
 model_adapters.insert(0, JapaneseStableLMAlphaAdapter())
 model_adapters.insert(1, JapaneseStableLMAlphaAdapterv2())
-
-for i in range(len(model_adapters)):
-    if "Rwkv" in type(model_adapters[i]).__name__:
-        model_adapters[i] = RwkvWorldAdapter()
 
 
 # Helper that generate a fastchat conversation from a template file
@@ -81,7 +76,6 @@ def get_model_answers(
     question_begin: Optional[int] = None,
     question_end: Optional[int] = None,
     # model parameters
-    lora_path: Optional[str] = None,
     conv_template: Optional[str] = None,
     device: str = "cuda",
     num_gpus: int = 1,
@@ -124,11 +118,6 @@ def get_model_answers(
         model.config.use_cache = False
         model.eval()
 
-        # if lora_path is not None:
-        #     model = PeftModel.from_pretrained(
-        #         model, lora_path, torch_dtype=torch.float16
-        #     )
-
         if max_tokens is None:
             seqlen_config_attrs = ("n_positions", "max_position_embeddings", "n_ctx")
             for attr in seqlen_config_attrs:
@@ -140,16 +129,11 @@ def get_model_answers(
                 raise ValueError(
                     "max_tokens must be specified if model.config doesn't have an attribute n_positions, max_position_embeddings, or n_ctx"
                 )
-
+        # FIXME: ここの処理を見直す
         if model_id == "matsuo-lab/weblab-10b-instruction-sft":
             tokenizer.pad_token_id = 1
             tokenizer.eos_token_id = 0
             tokenizer.bos_token_id = tokenizer.pad_token_id
-
-        if "RWKV" not in model_path:
-            print(
-                f"pad_token_id={tokenizer.pad_token_id}, bos_token_id={tokenizer.bos_token_id}, eos_token_id={tokenizer.eos_token_id}"
-            )
 
     for question in tqdm(questions):
         if not temperature:
@@ -165,7 +149,8 @@ def get_model_answers(
 
         stopping_criteria = None
 
-        if generate_answers and conv.stop_str and "RWKV" not in model_path:
+        # if generate_answers and conv.stop_str and "RWKV" not in model_path:
+        if generate_answers and conv.stop_str:
 
             class StoppingCriteriaSub(StoppingCriteria):
                 def __init__(self, stops=[], encounters=1):
@@ -269,19 +254,13 @@ def get_model_answers(
                         print(f"output_ids: { {id:tokenizer.convert_ids_to_tokens([id]) for id in output_ids.detach().cpu().numpy()} }", file=sys.stderr)
                         print(f"len(output_ids): {len(output_ids)}", file=sys.stderr)
 
-                        if "RWKV" in model_path:
-                            output = tokenizer.decode(output_ids).strip()
-                        elif "stablelm-instruct-alpha" in model_path:
-                            print('special stablelm-alpha decode')
-                            output = tokenizer.decode(
-                                output_ids,
-                                skip_special_tokens=True,
-                            )
-                        else:
-                            output = tokenizer.decode(
-                                output_ids,
-                                spaces_between_special_tokens=False,
-                            )
+                        # if "RWKV" in model_path:
+                        #     output = tokenizer.decode(output_ids).strip()
+                        # else:
+                        output = tokenizer.decode(
+                            output_ids,
+                            skip_special_tokens=True,
+                        )
 
                         for special_token in tokenizer.special_tokens_map.values():
                             if isinstance(special_token, list):

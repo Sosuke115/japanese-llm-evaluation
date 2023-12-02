@@ -283,16 +283,16 @@ def make_judge_pairwise(judge_model, judge_prompts):
 def make_judge_single(judge_model, judge_prompts):
     judges = {}
     judges["default"] = Judge(judge_model, judge_prompts["single-v1"])
-    judges["math"] = Judge(judge_model, judge_prompts["single-math-v1"], ref_based=True)
-    judges["default-mt"] = Judge(
-        judge_model, judge_prompts["single-v1-multi-turn"], multi_turn=True
-    )
-    judges["math-mt"] = Judge(
-        judge_model,
-        judge_prompts["single-math-v1-multi-turn"],
-        ref_based=True,
-        multi_turn=True,
-    )
+    # judges["math"] = Judge(judge_model, judge_prompts["single-math-v1"], ref_based=True)
+    # judges["default-mt"] = Judge(
+    #     judge_model, judge_prompts["single-v1-multi-turn"], multi_turn=True
+    # )
+    # judges["math-mt"] = Judge(
+    #     judge_model,
+    #     judge_prompts["single-math-v1-multi-turn"],
+    #     ref_based=True,
+    #     multi_turn=True,
+    # )
     return judges
 
 
