@@ -29,14 +29,13 @@ import torch
 
 from common import load_questions, temperature_config
 from fastchat.model import load_model, get_conversation_template
-from fastchat.model.model_adapter import model_adapters
+from fastchat.model.model_adapter import model_adapters, register_model_adapter
 from fastchat.conversation import Conversation, SeparatorStyle
 
 from adapters import (
     FastTokenizerAvailableBaseAdapter,
     JapaneseStableLMAlphaAdapter,
     JapaneseStableLMAlphaAdapterv2,
-    # RwkvWorldAdapter,
 )
 
 from fire import Fire
@@ -44,9 +43,9 @@ from tqdm import tqdm
 from transformers import GenerationConfig, StoppingCriteriaList, StoppingCriteria
 
 # Hack the fastchat model adapters
-model_adapters[-1] = FastTokenizerAvailableBaseAdapter()
-model_adapters.insert(0, JapaneseStableLMAlphaAdapter())
-model_adapters.insert(1, JapaneseStableLMAlphaAdapterv2())
+register_model_adapter(FastTokenizerAvailableBaseAdapter)
+register_model_adapter(JapaneseStableLMAlphaAdapter)
+register_model_adapter(JapaneseStableLMAlphaAdapterv2)
 
 
 # Helper that generate a fastchat conversation from a template file
