@@ -36,6 +36,8 @@ from adapters import (
     FastTokenizerAvailableBaseAdapter,
     JapaneseStableLMAlphaAdapter,
     JapaneseStableLMAlphaAdapterv2,
+    ElyzaJapaneseLlama2Adapter,
+    JapaneseStableLMGammaAdapter,
 )
 
 from fire import Fire
@@ -46,6 +48,8 @@ from transformers import GenerationConfig, StoppingCriteriaList, StoppingCriteri
 register_model_adapter(FastTokenizerAvailableBaseAdapter)
 register_model_adapter(JapaneseStableLMAlphaAdapter)
 register_model_adapter(JapaneseStableLMAlphaAdapterv2)
+register_model_adapter(ElyzaJapaneseLlama2Adapter)
+register_model_adapter(JapaneseStableLMGammaAdapter)
 
 
 # Helper that generate a fastchat conversation from a template file
