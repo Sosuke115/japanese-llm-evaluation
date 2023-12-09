@@ -110,7 +110,6 @@ def load_model_answers(answer_dir: str):
                 line = json.loads(line)
                 answer[line["question_id"]] = line
         model_answers[model_name] = answer
-
     return model_answers
 
 
