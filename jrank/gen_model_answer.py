@@ -45,9 +45,6 @@ from tqdm import tqdm
 from transformers import GenerationConfig, StoppingCriteriaList, StoppingCriteria
 
 # Hack the fastchat model adapters
-# register_model_adapter(FastTokenizerAvailableBaseAdapter)
-# register_model_adapter(JapaneseStableLMAlphaAdapter)
-# register_model_adapter(JapaneseStableLMAlphaAdapterv2)
 # PeftModelAdapterの次に高い優先度に設定
 model_adapters.insert(1, ElyzaJapaneseLlama2Adapter())
 model_adapters.insert(1, JapaneseStableLMGammaAdapter())
@@ -91,7 +88,7 @@ def get_model_answers(
     temperature: Optional[float] = None,
     top_p: float = 0.9,
     top_k: float = 0,
-    repetition_penalty: float = 1.0,
+    repetition_penalty: float = 1.1,
     num_beams: int = 1,
     max_tokens: Optional[int] = None,
     num_choices: int = 1,
@@ -133,12 +130,6 @@ def get_model_answers(
                 raise ValueError(
                     "max_tokens must be specified if model.config doesn't have an attribute n_positions, max_position_embeddings, or n_ctx"
                 )
-        # FIXME: ここの処理を見直す
-        if model_id == "matsuo-lab/weblab-10b-instruction-sft":
-            tokenizer.pad_token_id = 1
-            tokenizer.eos_token_id = 0
-            tokenizer.bos_token_id = tokenizer.pad_token_id
-
     for question in tqdm(questions):
         if not temperature:
             if question["category"] in temperature_config:
@@ -172,20 +163,12 @@ def get_model_answers(
 
             stop_words = [conv.stop_str]
 
-            if "beluga" in model_path:
-                stop_words_ids = [
-                    tokenizer.encode(
-                        "a" + stop_word, return_tensors="pt", add_special_tokens=False
-                    )[0, 2:]
-                    for stop_word in stop_words
-                ]
-            else:
-                stop_words_ids = [
-                    tokenizer.encode(
-                        stop_word, return_tensors="pt", add_special_tokens=False
-                    )[0, :]
-                    for stop_word in stop_words
-                ]
+            stop_words_ids = [
+                tokenizer.encode(
+                    stop_word, return_tensors="pt", add_special_tokens=False
+                )[0, :]
+                for stop_word in stop_words
+            ]
 
             if conv.stop_token_ids:
                 stop_words_ids += [torch.Tensor(conv.stop_token_ids).to(model.device)]
@@ -213,54 +196,38 @@ def get_model_answers(
                 print(f"prompt: {prompt}", file=sys.stderr)
 
                 if generate_answers:
-                    if "RWKV" in model_path:
-                        input_ids = torch.Tensor(tokenizer.encode(prompt)).unsqueeze(0)
-                    else:
-                        input_ids = tokenizer.encode(
-                            prompt, return_tensors="pt", add_special_tokens=False
-                        )
+                    input_ids = tokenizer.encode(
+                        prompt, return_tensors="pt", add_special_tokens=False
+                    )
 
                     print(f"input_ids: {input_ids}", file=sys.stderr)
                     print(f"len(input_ids): {len(input_ids[0])}", file=sys.stderr)
 
                     # some models may error out when generating long outputs
                     try:
-                        if "RWKV" in model_path:
-                            output_ids = model.generate(
-                                input_ids=input_ids,
-                                temperature=temperature,
-                                top_p=top_p,
-                                max_new_tokens=1024,
-                            )
+                        output_ids = model.generate(
+                            input_ids=input_ids.to(model.device),
+                            stopping_criteria=stopping_criteria,
+                            max_new_tokens=max_tokens - len(input_ids[0]),
+                            pad_token_id=tokenizer.pad_token_id,
+                            bos_token_id=tokenizer.bos_token_id,
+                            eos_token_id=tokenizer.eos_token_id,
+                            temperature=temperature,
+                            top_p=top_p,
+                            top_k=top_k,
+                            num_beams=num_beams,
+                            repetition_penalty=repetition_penalty,
+                            do_sample=True if temperature > 1e-4 else False,
+                        )
 
-                            output_ids = output_ids[0][len(input_ids[0]) :]
+                        if model.config.is_encoder_decoder:
+                            output_ids = output_ids[0]
                         else:
-                            output_ids = model.generate(
-                                input_ids=input_ids.to(model.device),
-                                stopping_criteria=stopping_criteria,
-                                max_new_tokens=max_tokens - len(input_ids[0]),
-                                pad_token_id=tokenizer.pad_token_id,
-                                bos_token_id=tokenizer.bos_token_id,
-                                eos_token_id=tokenizer.eos_token_id,
-                                temperature=temperature,
-                                top_p=top_p,
-                                top_k=top_k,
-                                num_beams=num_beams,
-                                repetition_penalty=repetition_penalty,
-                                do_sample=True if temperature > 1e-4 else False,
-                            )
-
-                            if model.config.is_encoder_decoder:
-                                output_ids = output_ids[0]
-                            else:
-                                output_ids = output_ids[0][len(input_ids[0]) :]
+                            output_ids = output_ids[0][len(input_ids[0]) :]
 
                         print(f"output_ids: { {id:tokenizer.convert_ids_to_tokens([id]) for id in output_ids.detach().cpu().numpy()} }", file=sys.stderr)
                         print(f"len(output_ids): {len(output_ids)}", file=sys.stderr)
 
-                        # if "RWKV" in model_path:
-                        #     output = tokenizer.decode(output_ids).strip()
-                        # else:
                         output = tokenizer.decode(
                             output_ids,
                             skip_special_tokens=True,
