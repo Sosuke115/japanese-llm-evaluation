@@ -9,6 +9,6 @@ python gen_model_answer.py \
     --conv_template ./templates/mistral.json \
     --load_8bit \
     --cpu_offloading \
-    --max_tokens 1024 \
+    --max_tokens 512 \
     --num_gpus 4 \
     --debug
